@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#180d3a"/>
+      <stop offset="55%" stop-color="#7a1b56"/>
+      <stop offset="100%" stop-color="#ff8a4c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#dusk)"/>
+  <!-- A 3.5mm jack, plugged in. -->
+  <g fill="none" stroke="#fff8f0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 13v10M39 13v10"/>
+    <path d="M20 23h24v6a12 12 0 0 1-24 0z"/>
+    <path d="M32 41v4a6 6 0 0 0 6 6h6"/>
+  </g>
+</svg>

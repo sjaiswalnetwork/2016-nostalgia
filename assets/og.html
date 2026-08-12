@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- Pinned to dusk: the card has to read at thumbnail size in a chat list,
+     and light type on a dark sky survives that better than the beach. -->
+<html lang="en" data-theme="dusk">
+  <head>
+    <meta charset="utf-8" />
+    <title>2016 Nostalgia — open graph card</title>
+    <!--
+      Source for assets/og.png. Not linked from the site; it exists only so
+      the link-preview image can be re-rendered from the same scene and the
+      same stylesheet the site uses, instead of drifting in an image editor.
+
+      Re-render (Chrome, any platform), with the local server running:
+        chrome --headless --disable-gpu --hide-scrollbars \
+               --window-size=1200,630 --virtual-time-budget=8000 \
+               --screenshot=assets/og.png http://localhost:5173/assets/og.html
+
+      Then bump ?v= on the og:image URLs in index.html — WhatsApp, iMessage
+      and X cache previews for weeks and key that cache on the URL.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      /* The card is a fixed 1200×630 — none of the site's viewport-relative
+         sizing applies, so the type is pinned in px. */
+      body {
+        width: 1200px;
+        height: 630px;
+      }
+
+      .card {
+        position: relative;
+        z-index: 2;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 26px;
+        /* Lifts the lockup clear of the skyline — centred, the tagline lands
+           on top of the buildings and stops being readable. */
+        padding-bottom: 96px;
+      }
+
+      .card .logo {
+        font-size: 210px;
+      }
+
+      .card__line {
+        font-size: 25px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-dim);
+      }
+
+      /* Grain crawls on the live site; a still frame is all the card needs,
+         and an animation mid-capture would blur the screenshot. */
+      .grain {
+        animation: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <div class="scene scene--dusk">
+        <div class="sky"></div>
+        <div class="sun"></div>
+        <svg class="skyline" viewBox="0 0 1440 200" preserveAspectRatio="none">
+          <path
+            fill="#150a2c"
+            fill-opacity="0.88"
+            d="M0 200V150h60v-30h40v50h40V96h36v44h54V60h32v70h38v-26h52v54h40V78h36v48h52v24h40V88h36v46h44v-22h48v52h42V70h36v58h46v20h40V100h44v42h44V64h36v56h44v36h40V92h40v46h48v-22h44v44h44V74h36v58h48v20h40V98h40v46h40v-20h40v76z"
+          />
+        </svg>
+        <div class="ground"></div>
+      </div>
+      <div class="grain"></div>
+      <div class="vignette"></div>
+    </div>
+
+    <div class="card">
+      <h1 class="logo">
+        <span class="logo__year">2016</span>
+        <span class="logo__word">NOSTALGIA</span>
+      </h1>
+      <p class="card__line">the songs that owned the year</p>
+    </div>
+  </body>
+</html>

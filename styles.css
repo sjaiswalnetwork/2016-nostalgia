@@ -782,6 +782,15 @@ main {
   transform: translate(-50%, -50%) scale(1);
 }
 
+/* While an advert runs, the seek bar belongs to the song, not the advert —
+   so it's frozen and dimmed rather than scrubbing something you can't
+   actually scrub. */
+body.is-ad .seek,
+body.is-ad .time {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .time {
   margin-top: 0.15rem;
   font-size: 0.62rem;

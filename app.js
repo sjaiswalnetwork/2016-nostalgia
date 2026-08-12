@@ -67,6 +67,8 @@
   let ticker = null;
   let dragging = false;
   let skidCount = 0; // consecutive embed failures, to stop a runaway skip
+  let expectedId = null; // the video we asked for, vs whatever is on screen
+  let adShowing = false;
 
   const track = () => TRACKS[order[cursor]];
   const thumb = (id, big) =>
@@ -213,6 +215,12 @@
     const t = track();
     if (!t || !ready) return;
 
+    expectedId = t.id;
+    // Clear the flag rather than the class alone: leaving it set makes the
+    // next checkAd() see no change and skip restoring the title, which
+    // strands the ad label over a track that has already moved on.
+    adShowing = false;
+    el.body.classList.remove('is-ad');
     paintTrack();
     if (play) {
       armed = true;
@@ -268,6 +276,41 @@
     el.seek.setAttribute('aria-valuetext', `${mmss(cur)} of ${mmss(dur)}`);
   }
 
+  /* ── Ads ───────────────────────────────────────────────────────────
+   *
+   * YouTube serves the audio, so YouTube sells the pre-rolls, and there is
+   * no API for skipping or suppressing them — nor should there be; the
+   * plays are what pay the artists. What we *can* do is stop lying about
+   * them: without this, an ad plays while the dock still shows the song
+   * title and the seek bar counts through the advert's runtime, which
+   * reads as a broken player rather than an advert.
+   *
+   * There is no official ad hook (`getAdState` does not exist), so this
+   * compares the video actually loaded against the one we asked for. If a
+   * future player build stops reporting the ad's own id, this quietly
+   * never fires and the behaviour is simply what it was before — the check
+   * can't produce a false positive, because it only speaks up when it has
+   * a real, different id in hand.
+   */
+  function checkAd() {
+    let vid = '';
+    try {
+      vid = ((player.getVideoData && player.getVideoData()) || {}).video_id || '';
+    } catch (_) {
+      return;
+    }
+
+    const isAd = !!expectedId && !!vid && vid !== expectedId;
+    if (isAd === adShowing) return;
+
+    adShowing = isAd;
+    el.body.classList.toggle('is-ad', isAd);
+
+    const t = track();
+    el.title.textContent = isAd ? 'Ad — your song is next' : t ? t.title : '';
+    el.artist.textContent = isAd ? 'this is how the artists get paid' : t ? t.artist : '';
+  }
+
   /* A 250ms interval rather than requestAnimationFrame: the numbers only
      change a few times a second, and an interval keeps ticking when the
      tab is backgrounded — which is exactly when music is still playing. */
@@ -275,6 +318,10 @@
     stopTicker();
     ticker = setInterval(() => {
       if (dragging || !ready) return;
+      checkAd();
+      // Leave the bar where it was: painting the advert's clock onto the
+      // song's progress is the exact confusion this is here to avoid.
+      if (adShowing) return;
       setSeek(player.getCurrentTime() || 0, player.getDuration() || 0);
     }, 250);
   }
@@ -370,7 +417,8 @@
 
     if (playing) {
       skidCount = 0; // it played, so the run of dead tracks is over
-      setSeek(player.getCurrentTime() || 0, player.getDuration() || 0);
+      checkAd();
+      if (!adShowing) setSeek(player.getCurrentTime() || 0, player.getDuration() || 0);
     }
 
     if ('mediaSession' in navigator) {
