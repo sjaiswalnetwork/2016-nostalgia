@@ -67,8 +67,9 @@
   let ticker = null;
   let dragging = false;
   let skidCount = 0; // consecutive embed failures, to stop a runaway skip
-  let expectedId = null; // the video we asked for, vs whatever is on screen
+  let wantPlaying = false; // we asked for sound; the user hasn't paused
   let adShowing = false;
+  let stalledAt = 0; // when the "asked to play but isn't" window opened
 
   const track = () => TRACKS[order[cursor]];
   const thumb = (id, big) =>
@@ -215,15 +216,20 @@
     const t = track();
     if (!t || !ready) return;
 
-    expectedId = t.id;
-    // Clear the flag rather than the class alone: leaving it set makes the
-    // next checkAd() see no change and skip restoring the title, which
-    // strands the ad label over a track that has already moved on.
+    // Clear it outright rather than just dropping the class: leaving the
+    // flag set makes the next checkAd() see no change and skip restoring
+    // the title, stranding the advert label over a track that has already
+    // moved on. The timer resets too, or the new track inherits the last
+    // one's stall and flashes the label instantly.
     adShowing = false;
+    stalledAt = 0;
+    lastSeenTime = -1;
     el.body.classList.remove('is-ad');
+
     paintTrack();
     if (play) {
       armed = true;
+      wantPlaying = true;
       player.loadVideoById(t.id);
     } else {
       player.cueVideoById(t.id);
@@ -253,13 +259,23 @@
       // First press: the cued video needs an explicit load to get sound
       // on iOS, which ignores playVideo() on a merely-cued player.
       armed = true;
+      wantPlaying = true;
       player.loadVideoById(track().id);
       return;
     }
+
+    // Mid-advert the song reports itself paused, so asking the player what
+    // to do next would restart the advert rather than stop it. `adShowing`
+    // is the only thing that knows sound is actually coming out.
     const s = player.getPlayerState();
-    if (s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING) {
+    const sounding = adShowing || s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING;
+
+    if (sounding) {
+      wantPlaying = false;
+      setAd(false); // stop claiming an advert once we've stopped asking for sound
       player.pauseVideo();
     } else {
+      wantPlaying = true;
       player.playVideo();
     }
   }
@@ -285,30 +301,73 @@
    * title and the seek bar counts through the advert's runtime, which
    * reads as a broken player rather than an advert.
    *
-   * There is no official ad hook (`getAdState` does not exist), so this
-   * compares the video actually loaded against the one we asked for. If a
-   * future player build stops reporting the ad's own id, this quietly
-   * never fires and the behaviour is simply what it was before — the check
-   * can't produce a false positive, because it only speaks up when it has
-   * a real, different id in hand.
+   * There is no official ad hook — `getAdState` does not exist, and during
+   * a pre-roll `getVideoData().video_id` still reports the *song*, so
+   * comparing ids finds nothing. What the player does betray is its state:
+   * it reports the song as not-started while the advert plays over the top,
+   * and `getDuration()` is already the song's full length. So the tell is
+   * simply "we asked for sound, sound is presumably coming out, and yet the
+   * song claims it hasn't begun".
+   *
+   * State alone isn't enough, though: this player can sit in CUED for
+   * several seconds on a slow connection, which would flash the label at
+   * someone who is merely waiting. The separator is the clock. During an
+   * advert `getCurrentTime()` runs — it's the advert's own position — while
+   * the song still claims not to have started. A slow load leaves it at
+   * zero. So the test is "a clock is running that cannot be the song's".
+   *
+   * A user-initiated pause clears `wantPlaying`, and normal playback
+   * reports PLAYING, so neither is mistaken for an advert. If a future
+   * player stops leaking the advert's clock this simply never fires, and
+   * the behaviour is what it was before.
    */
+  const AD_STATES = [-1, 2, 5]; // UNSTARTED, PAUSED, CUED
+  const AD_AFTER_MS = 800;
+  let lastSeenTime = -1;
+
+  function setAd(on) {
+    if (on === adShowing) return;
+    adShowing = on;
+    el.body.classList.toggle('is-ad', on);
+
+    const t = track();
+    el.title.textContent = on ? 'Ad — your song is next' : t ? t.title : '';
+    el.artist.textContent = on ? 'it starts on its own' : t ? t.artist : '';
+    paintPlayState();
+  }
+
   function checkAd() {
-    let vid = '';
+    if (!armed || !wantPlaying) {
+      stalledAt = 0;
+      lastSeenTime = -1;
+      return setAd(false);
+    }
+
+    let s, now;
     try {
-      vid = ((player.getVideoData && player.getVideoData()) || {}).video_id || '';
+      s = player.getPlayerState();
+      now = player.getCurrentTime() || 0;
     } catch (_) {
       return;
     }
 
-    const isAd = !!expectedId && !!vid && vid !== expectedId;
-    if (isAd === adShowing) return;
+    if (!AD_STATES.includes(s)) {
+      stalledAt = 0;
+      lastSeenTime = now;
+      return setAd(false);
+    }
 
-    adShowing = isAd;
-    el.body.classList.toggle('is-ad', isAd);
+    // Needs two samples to say anything, so the first tick only arms it.
+    const running = lastSeenTime >= 0 && now > lastSeenTime + 0.05;
+    lastSeenTime = now;
 
-    const t = track();
-    el.title.textContent = isAd ? 'Ad — your song is next' : t ? t.title : '';
-    el.artist.textContent = isAd ? 'this is how the artists get paid' : t ? t.artist : '';
+    if (!running) {
+      stalledAt = 0; // waiting on the network, not sitting through an advert
+      return setAd(false);
+    }
+
+    if (!stalledAt) stalledAt = Date.now();
+    setAd(Date.now() - stalledAt > AD_AFTER_MS);
   }
 
   /* A 250ms interval rather than requestAnimationFrame: the numbers only
@@ -406,26 +465,43 @@
     startTicker();
   }
 
-  function onStateChange(e) {
-    const S = YT.PlayerState;
-    const playing = e.data === S.PLAYING;
+  /* One place decides how the transport looks, because two do not agree:
+     during an advert the song's own state says "paused" while sound is
+     very much coming out, and a pause button that reads as play is exactly
+     the confusion being fixed here. */
+  function paintPlayState() {
+    let s = -1;
+    try {
+      s = player.getPlayerState();
+    } catch (_) {}
 
+    const playing = adShowing || s === YT.PlayerState.PLAYING;
     el.body.classList.toggle('is-playing', playing);
-    el.body.classList.toggle('is-buffering', e.data === S.BUFFERING);
+    el.body.classList.toggle('is-buffering', !adShowing && s === YT.PlayerState.BUFFERING);
     el.disc.classList.toggle('is-spinning', playing);
     el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-
-    if (playing) {
-      skidCount = 0; // it played, so the run of dead tracks is over
-      checkAd();
-      if (!adShowing) setSeek(player.getCurrentTime() || 0, player.getDuration() || 0);
-    }
 
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
     }
+  }
 
-    if (e.data === S.ENDED) step(1);
+  function onStateChange(e) {
+    const S = YT.PlayerState;
+
+    // Runs first: the advert check decides what "playing" even means below.
+    checkAd();
+    paintPlayState();
+
+    if (e.data === S.PLAYING) {
+      skidCount = 0; // it played, so the run of dead tracks is over
+      if (!adShowing) setSeek(player.getCurrentTime() || 0, player.getDuration() || 0);
+    }
+
+    if (e.data === S.ENDED) {
+      wantPlaying = true; // rolling on to the next track, not stopping
+      step(1);
+    }
   }
 
   /* 101 and 150 both mean "the uploader disabled embedding"; 100 means the
