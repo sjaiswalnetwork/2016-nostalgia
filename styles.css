@@ -1,0 +1,1078 @@
+/* 2016 Nostalgia — one screen, two skies.
+   ------------------------------------------------------------------
+   Layout is three fixed bands over a full-bleed scene: top bar, centred
+   wordmark, bottom dock. Nothing scrolls; the page is exactly one screen
+   on every device, so sizes are clamp()ed rather than breakpointed
+   wherever they can be.
+
+   Theming is entirely variables. `data-theme` on <html> swaps a palette
+   and a horizon; every scene layer keys off those, so neither theme
+   needs its own layout rules. */
+
+:root {
+  /* --- shared ------------------------------------------------------ */
+  --pad: clamp(0.9rem, 2.4vw, 1.6rem);
+  --dock-w: min(560px, calc(100vw - 2rem));
+  --blur: blur(20px) saturate(1.3);
+
+  /* --- dusk (default) ---------------------------------------------- */
+  --ink: #fff8f0;
+  --ink-dim: rgba(255, 248, 240, 0.62);
+  --ink-faint: rgba(255, 248, 240, 0.34);
+  --shadow-ink: 0 1px 12px rgba(0, 0, 0, 0.5);
+
+  --hot: #ff2d55;
+  --warm: #ffb45c;
+
+  --glass: rgba(20, 10, 40, 0.42);
+  --glass-line: rgba(255, 248, 240, 0.14);
+  --glass-hover: rgba(255, 248, 240, 0.1);
+  --panel: rgba(14, 7, 30, 0.72);
+
+  --logo-a: #fffaf2;
+  --logo-b: #ffe9d0;
+  --logo-c: #ffc189;
+  --logo-glow: drop-shadow(0 4px 40px rgba(255, 120, 90, 0.35))
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+
+  --rail: rgba(255, 248, 240, 0.2);
+  --play-bg: #fff8f0;
+  --play-ink: #1a0a24;
+
+  --page: #08040f;
+  --grain-opacity: 0.16;
+  --vignette: radial-gradient(ellipse at 50% 45%, transparent 42%, rgba(4, 2, 10, 0.72) 100%);
+
+  /* Where the ground meets the sky. Sun, skyline and ground all key off
+     this one number, so the scene moves as a unit. */
+  --horizon: 76%;
+}
+
+[data-theme='beach'] {
+  --ink: #0d2b3e;
+  --ink-dim: rgba(13, 43, 62, 0.66);
+  --ink-faint: rgba(13, 43, 62, 0.4);
+  --shadow-ink: 0 1px 10px rgba(255, 255, 255, 0.55);
+
+  --hot: #ff5b5b;
+  --warm: #f08a24;
+
+  /* Frosted white rather than smoked glass — a dark dock on a bright
+     beach reads as a hole punched in the scene. */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-line: rgba(255, 255, 255, 0.75);
+  --glass-hover: rgba(13, 43, 62, 0.09);
+  --panel: rgba(255, 255, 255, 0.82);
+
+  --logo-a: #ffffff;
+  --logo-b: #ffe9b8;
+  --logo-c: #ff7a2f;
+  /* A tight dark shadow does the heavy lifting here — pale type on a pale
+     sky has almost no contrast of its own to fall back on. */
+  --logo-glow: drop-shadow(0 10px 34px rgba(6, 48, 76, 0.45))
+    drop-shadow(0 2px 1px rgba(6, 48, 76, 0.55));
+
+  /* The rail and the play button both sit on a light, frosted dock, so
+     they invert relative to the dusk theme. */
+  --rail: rgba(13, 43, 62, 0.2);
+  --play-bg: #0d2b3e;
+  --play-ink: #fff8f0;
+
+  --page: #7fd4ea;
+  --grain-opacity: 0.07;
+  --vignette: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(6, 60, 88, 0.32) 100%);
+
+  --horizon: 58%;
+  /* Beach only: where the water stops and the sand starts. */
+  --shore: 74%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* Fixed rather than hidden: iOS Safari will still rubber-band an
+     overflow:hidden body, which drags the whole scene off the horizon. */
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--page);
+  color: var(--ink);
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--warm);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Scenes ──────────────────────────────────────────────────────── */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Only the active scene exists. `display:none` rather than opacity so the
+   inactive one costs nothing to composite. */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+[data-theme='dusk'] .scene--dusk,
+[data-theme='beach'] .scene--beach {
+  display: block;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+}
+
+.scene--dusk .sky {
+  background: linear-gradient(
+    to bottom,
+    #0a0620 0%,
+    #170c38 20%,
+    #35134f 40%,
+    #6e1a55 56%,
+    #b02b5e 66%,
+    #ee5a44 72%,
+    #ffb45c var(--horizon)
+  );
+}
+
+.scene--beach .sky {
+  background: linear-gradient(
+    to bottom,
+    #1e7fc2 0%,
+    #3ea3dd 26%,
+    #7cc9ef 46%,
+    #b7e6f8 var(--horizon)
+  );
+}
+
+/* Dusk: centre on the horizon, so it reads as half-set and the skyline
+   bites into it. Beach: high and small, the way midday looks. */
+.sun {
+  position: absolute;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1;
+}
+
+.scene--dusk .sun {
+  top: var(--horizon);
+  width: clamp(300px, 36vw, 560px);
+  background: radial-gradient(
+    circle,
+    #fff3d0 0%,
+    #ffd07a 30%,
+    rgba(255, 150, 80, 0.5) 54%,
+    rgba(255, 90, 90, 0) 72%
+  );
+  filter: blur(2px);
+}
+
+.scene--beach .sun {
+  left: 74%;
+  top: 16%;
+  width: clamp(160px, 20vw, 300px);
+  background: radial-gradient(
+    circle,
+    #ffffff 0%,
+    #fff6c8 26%,
+    rgba(255, 232, 150, 0.55) 44%,
+    rgba(255, 220, 130, 0) 70%
+  );
+}
+
+/* Buildings stand *on* the horizon: their baseline is the element's bottom
+   edge, so `bottom` is the horizon measured from the floor. */
+.skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - var(--horizon));
+  width: 100%;
+  height: clamp(84px, 15vh, 180px);
+}
+
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100% - var(--horizon));
+  background: linear-gradient(to bottom, #2a1440 0%, #120823 45%, #08040f 100%);
+}
+
+/* Parked bottom-right — the one corner the wordmark, the plug and the dock
+   all leave alone. */
+.car {
+  position: absolute;
+  right: clamp(-40px, 2vw, 40px);
+  bottom: 3.5%;
+  width: clamp(210px, 26vw, 400px);
+  height: auto;
+}
+
+.tail {
+  animation: glow 4.5s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Beach-only layers ───────────────────────────────────────────── */
+
+/* Started below the top bar, and blurred: overlapping hard-edged ellipses
+   read as a lumpy blob, a few pixels of blur read as cloud. */
+.clouds {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6%;
+  width: 100%;
+  height: clamp(150px, 30vh, 320px);
+  filter: blur(7px);
+}
+
+.sea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--horizon);
+  height: calc(var(--shore) - var(--horizon));
+  background: linear-gradient(to bottom, #1b93b8 0%, #1aa7bd 40%, #46c8cd 100%);
+}
+
+.sea__glint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--shore);
+  bottom: 0;
+  background: linear-gradient(to bottom, #f6dfae 0%, #efcf92 45%, #e2b978 100%);
+}
+
+/* The wet edge, sitting astride the shoreline. */
+.foam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: clamp(18px, 3.5vh, 40px);
+  transform: translateY(-70%);
+}
+
+.palm {
+  position: absolute;
+  bottom: calc(100% - var(--shore) - 3%);
+  height: clamp(210px, 44vh, 440px);
+  width: auto;
+}
+
+.palm--left {
+  left: clamp(-70px, -3vw, 0px);
+  transform: scaleX(-1);
+}
+
+.palm--right {
+  right: clamp(-90px, -4vw, 0px);
+  height: clamp(160px, 34vh, 340px);
+  opacity: 0.9;
+}
+
+.parasol {
+  position: absolute;
+  right: clamp(4px, 5vw, 90px);
+  bottom: 2%;
+  height: clamp(130px, 24vh, 240px);
+  width: auto;
+}
+
+/* ── Shared overlays ─────────────────────────────────────────────── */
+
+/* Film grain. An inline feTurbulence beats shipping a noise PNG — no
+   request, no cache, and it scales to any DPR. */
+.grain {
+  position: absolute;
+  inset: -50%;
+  opacity: var(--grain-opacity);
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  animation: grain 900ms steps(4) infinite;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-3%, 2%); }
+  50% { transform: translate(2%, -3%); }
+  75% { transform: translate(-2%, -2%); }
+  100% { transform: translate(0, 0); }
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--vignette);
+}
+
+/* The sound source. Off-screen rather than display:none — a hidden iframe
+   is throttled hard by Chrome and can stall mid-track. */
+.yt-host {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────── */
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) var(--pad);
+}
+
+.clock {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  text-shadow: var(--shadow-ink);
+}
+
+.tally {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  text-shadow: var(--shadow-ink);
+}
+
+.tally__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 10px rgba(61, 220, 132, 0.9);
+}
+
+/* Only pulses once the count is real people rather than a track total. */
+.tally.is-live .tally__dot {
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+.tally__num {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.links {
+  justify-self: end;
+  display: flex;
+  gap: 0.2rem;
+}
+
+.link {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--ink-dim);
+  transition: color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.link:hover {
+  color: var(--ink);
+  background: var(--glass-hover);
+  transform: translateY(-1px);
+}
+
+/* The button offers the sky you'd be switching *to*, not the one you're in. */
+.i-moon,
+[data-theme='beach'] .i-sun {
+  display: none;
+}
+
+[data-theme='beach'] .i-moon {
+  display: block;
+}
+
+/* ── The plug ────────────────────────────────────────────────────── */
+
+.plugbar {
+  position: fixed;
+  left: var(--pad);
+  top: 50%;
+  z-index: 3;
+  transform: translateY(-50%);
+}
+
+.plug {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.95rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
+}
+
+.plug:hover {
+  transform: translateX(3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.plug:active {
+  transform: translateX(1px) scale(0.97);
+}
+
+.plug__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 180, 92, 0.18);
+  color: var(--warm);
+}
+
+/* One short wiggle when the chime fires. */
+.plug.is-live .plug__icon {
+  animation: jack 0.45s ease;
+}
+
+@keyframes jack {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(3px) rotate(-8deg); }
+  70% { transform: translateY(-2px) rotate(6deg); }
+  100% { transform: translateY(0); }
+}
+
+.plug__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.12;
+  text-align: left;
+}
+
+.plug__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.plug__sub {
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+}
+
+/* ── Wordmark ────────────────────────────────────────────────────── */
+
+main {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  /* Wordmark takes the free space and centres in it; the dock keeps its
+     natural height. Two rows, so the two never fight over the middle. */
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+}
+
+.logo {
+  margin: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Anton', 'Poppins', sans-serif;
+  font-weight: 400;
+  /* Sized for the *year*; the word below is set in em, so the whole lockup
+     scales from this one value. */
+  font-size: clamp(4.6rem, 21vw, 12rem);
+  line-height: 0.93;
+  /* Painted onto the scene rather than sitting on top of it: a gradient
+     fill plus a soft bloom does most of that work. */
+  background: linear-gradient(180deg, var(--logo-a) 0%, var(--logo-b) 52%, var(--logo-c) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: var(--logo-glow);
+  user-select: none;
+}
+
+.logo__year {
+  display: block;
+  letter-spacing: 0.01em;
+}
+
+/* Tracked out and set smaller so the nine letters end up optically the
+   same width as the four digits above them. */
+.logo__word {
+  display: block;
+  font-size: 0.3em;
+  letter-spacing: 0.2em;
+  /* Letter-spacing adds a trailing gap after the last letter, which shoves
+     the line off-centre. Half of it back on the left squares it up. */
+  text-indent: 0.2em;
+}
+
+/* ── Dock ────────────────────────────────────────────────────────── */
+
+.dock {
+  position: relative;
+  width: var(--dock-w);
+  padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.bumper {
+  margin: 0;
+  max-width: 30ch;
+  text-align: center;
+  font-size: clamp(0.78rem, 2.2vw, 0.92rem);
+  line-height: 1.45;
+  color: var(--ink-dim);
+  text-shadow: var(--shadow-ink);
+}
+
+.bumper__text {
+  transition: opacity 0.18s;
+}
+
+.bumper.is-swapping .bumper__text {
+  opacity: 0;
+}
+
+.bumper__next {
+  vertical-align: -2px;
+  margin-left: 0.4rem;
+  padding: 2px;
+  color: var(--ink-faint);
+  transition: color 0.2s, transform 0.3s;
+}
+
+.bumper__next:hover {
+  color: var(--warm);
+  transform: rotate(-90deg);
+}
+
+.player {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(0.7rem, 2vw, 1.1rem);
+  padding: 0.7rem 1rem 0.7rem 0.7rem;
+  border-radius: 22px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Disc ────────────────────────────────────────────────────────── */
+
+.disc {
+  position: relative;
+  width: clamp(52px, 13vw, 66px);
+  aspect-ratio: 1;
+  flex: none;
+}
+
+.disc__ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #150a2c;
+  box-shadow: inset 0 0 0 1px var(--glass-line), 0 8px 22px rgba(0, 0, 0, 0.4);
+  animation: spin 9s linear infinite;
+  animation-play-state: paused;
+}
+
+.disc.is-spinning .disc__ring {
+  animation-play-state: running;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* YouTube thumbnails are 16:9 with pillar bars; cover-cropping to the
+   centre square throws the bars away and keeps the artwork. */
+.disc__art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.disc__art.is-loaded {
+  opacity: 1;
+}
+
+.disc__hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #0d0620;
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 240, 0.22);
+}
+
+/* ── Meta + seek ─────────────────────────────────────────────────── */
+
+.meta {
+  min-width: 0;
+}
+
+.meta__title,
+.meta__artist {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.meta__artist {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+
+.seek {
+  position: relative;
+  margin-top: 0.5rem;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.seek__rail {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--rail);
+  overflow: hidden;
+}
+
+.seek__fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--warm), var(--hot));
+}
+
+.seek__knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s;
+  pointer-events: none;
+}
+
+.seek:hover .seek__knob,
+.seek:focus-visible .seek__knob,
+.seek.is-dragging .seek__knob {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.time {
+  margin-top: 0.15rem;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+/* ── Controls ────────────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--ink-dim);
+  transition: color 0.18s, background 0.18s, transform 0.12s;
+}
+
+.btn:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--glass-hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn--toggle.is-on {
+  color: var(--warm);
+}
+
+.btn--play {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  margin: 0 0.2rem;
+  color: var(--play-ink);
+  background: var(--play-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn--play:hover:not(:disabled) {
+  color: var(--play-ink);
+  background: var(--play-bg);
+  filter: brightness(1.12);
+  transform: scale(1.05);
+}
+
+/* Play and pause are both in the DOM; `is-playing` on <body> picks one, so
+   swapping states never costs a reflow. */
+.i-pause,
+body.is-playing .i-play {
+  display: none;
+}
+
+body.is-playing .i-pause {
+  display: block;
+}
+
+/* Buffering ring — shown only while the iframe is actually fetching. */
+.btn__spinner {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--warm);
+  opacity: 0;
+  animation: spin 0.8s linear infinite;
+}
+
+body.is-buffering .btn__spinner {
+  opacity: 1;
+}
+
+body.is-buffering .i-play,
+body.is-buffering .i-pause {
+  opacity: 0.35;
+}
+
+/* ── Playlist ────────────────────────────────────────────────────── */
+
+.list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - 0.4rem);
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.4rem;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-faint) transparent;
+}
+
+.list[hidden] {
+  display: none;
+}
+
+.list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--ink-faint);
+}
+
+.list ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list button {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.44rem 0.6rem;
+  border-radius: 11px;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.list button:hover {
+  background: var(--glass-hover);
+}
+
+.list__num {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.list__title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list__artist {
+  font-size: 0.66rem;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list li.is-current button {
+  background: rgba(255, 180, 92, 0.18);
+}
+
+.list li.is-current .list__title {
+  color: var(--warm);
+}
+
+/* Tracks YouTube refuses to embed get struck through rather than removed,
+   so the numbering never shifts under the user mid-session. */
+.list li.is-dead button {
+  opacity: 0.4;
+}
+
+.list li.is-dead .list__title {
+  text-decoration: line-through;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--pad) + env(safe-area-inset-top) + 2.9rem);
+  z-index: 5;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+}
+
+.toast.is-up {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.noscript {
+  position: relative;
+  z-index: 4;
+  padding: 2rem;
+  text-align: center;
+}
+
+.noscript a {
+  color: var(--warm);
+}
+
+/* ── Small screens ───────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  /* The plug pill would sit on top of the wordmark, so it drops to a bare
+     icon tucked against the edge. */
+  .plug {
+    padding: 0.5rem;
+  }
+
+  .plug__text {
+    display: none;
+  }
+
+  .player {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'disc meta'
+      'controls controls';
+    row-gap: 0.5rem;
+  }
+
+  .disc { grid-area: disc; }
+  .meta { grid-area: meta; }
+
+  .controls {
+    grid-area: controls;
+    justify-content: center;
+  }
+
+  /* The scene has to get out of the way on a narrow screen. At desktop
+     sizes the palms frame the wordmark; at 390px the same sizes put a
+     trunk straight through it. One palm, smaller, pushed mostly
+     off-canvas — and the parasol goes entirely, since the sand strip left
+     under the dock is too thin to stand it in. */
+  .palm--right,
+  .parasol {
+    display: none;
+  }
+
+  .palm--left {
+    height: clamp(150px, 24vh, 230px);
+    left: clamp(-90px, -14vw, -46px);
+  }
+}
+
+/* Short-and-wide (landscape phones): the wordmark has to give way first. */
+@media (max-height: 560px) {
+  .logo {
+    font-size: clamp(2.6rem, 9vh, 5rem);
+  }
+
+  .bumper {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain,
+  .tail,
+  .disc__ring,
+  .btn__spinner,
+  .tally.is-live .tally__dot {
+    animation: none !important;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
