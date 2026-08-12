@@ -1,449 +1,291 @@
 <!doctype html>
-<html lang="en" data-theme="dusk">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>2016 Nostalgia — the songs that owned the year</title>
-    <meta
-      name="description"
-      content="78 songs from the year the aux cord was a responsibility. Closer, Faded, Lean On, Shape of You. Press play."
-    />
-    <meta name="theme-color" content="#120a2e" />
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alibi — realistic excuse generator</title>
+<style>
+  :root {
+    --bg: #0e1014;
+    --bg-2: #16191f;
+    --card: #1b1f27;
+    --line: #2a3038;
+    --ink: #eceef2;
+    --ink-2: #a7aeba;
+    --ink-3: #6f7784;
+    --accent: #f0b429;
+    --accent-ink: #1a1200;
+    --good: #4ec98a;
+    --mid: #f0b429;
+    --bad: #f0705f;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f5f2; --bg-2: #fffefb; --card: #ffffff; --line: #e3e0d8;
+      --ink: #1b1d21; --ink-2: #565d68; --ink-3: #8a919c;
+      --accent: #b8860b; --accent-ink: #fffdf5;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 28px 18px 60px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
 
-    <!-- Link previews drop relative URLs, so these three have to be absolute.
-         Change the host here and in <link rel=canonical> if you deploy
-         anywhere other than the GitHub Pages project site. -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="2016 Nostalgia" />
-    <meta property="og:title" content="2016 Nostalgia" />
-    <meta property="og:description" content="The songs that owned 2016. Press play." />
-    <meta property="og:url" content="https://sjaiswalnetwork.github.io/2016-nostalgia/" />
-    <!-- Bump ?v= whenever the image changes — WhatsApp, iMessage and X cache
-         previews for weeks and key that cache on the URL. -->
-    <meta
-      property="og:image"
-      content="https://sjaiswalnetwork.github.io/2016-nostalgia/assets/og.png?v=2"
-    />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="2016 Nostalgia — the songs that owned the year." />
+  header { margin-bottom: 22px; }
+  h1 {
+    font-size: 26px; letter-spacing: -0.02em; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  h1 .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); flex: none;
+  }
+  .tagline { color: var(--ink-2); font-size: 14px; margin: 0; }
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="2016 Nostalgia" />
-    <meta name="twitter:description" content="The songs that owned 2016. Press play." />
-    <meta
-      name="twitter:image"
-      content="https://sjaiswalnetwork.github.io/2016-nostalgia/assets/og.png?v=2"
-    />
+  /* ---- controls ---- */
+  .controls {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px; margin-bottom: 14px;
+  }
+  @media (min-width: 620px) { .controls { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  label.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  label.field span {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--ink-3); font-weight: 600;
+  }
+  select {
+    width: 100%; padding: 9px 10px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--bg-2); color: var(--ink);
+    font: inherit; font-size: 14px; cursor: pointer;
+  }
+  select:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
 
-    <link rel="canonical" href="https://sjaiswalnetwork.github.io/2016-nostalgia/" />
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg-2); color: var(--ink); padding: 11px 16px;
+  }
+  .btn:hover { border-color: var(--ink-3); }
+  .btn.primary {
+    background: var(--accent); color: var(--accent-ink); border-color: transparent;
+    padding: 12px 20px; font-size: 15px;
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn:active { transform: translateY(1px); }
+  .toggle {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; color: var(--ink-2); cursor: pointer; user-select: none;
+  }
+  .toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+  .hint { font-size: 12px; color: var(--ink-3); }
+  kbd {
+    font: inherit; font-size: 11px; padding: 1px 5px; border-radius: 4px;
+    border: 1px solid var(--line); background: var(--bg-2); color: var(--ink-2);
+  }
 
-    <!-- Theme is restored before first paint. In <head>, synchronously, so the
-         page never flashes the wrong sky on the way to the right one. -->
-    <script>
-      (() => {
-        let t;
-        try {
-          t = localStorage.getItem('n2016:theme');
-        } catch (_) {}
-        // No saved choice: match the sky outside. Beach by day, dusk by night.
-        if (t !== 'beach' && t !== 'dusk') {
-          const h = new Date().getHours();
-          t = h >= 6 && h < 17 ? 'beach' : 'dusk';
-        }
-        document.documentElement.dataset.theme = t;
-      })();
-    </script>
+  /* ---- live conditions ---- */
+  .live { margin-bottom: 14px; padding: 16px 18px; }
+  .live.on { border-color: var(--accent); }
+  .live-top { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+  .live-title { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .badge.stale { background: var(--ink-3); color: var(--bg); }
+  .live-sub { margin: 5px 0 0; font-size: 13px; color: var(--ink-2); max-width: 46ch; }
+  .live-sub.err { color: var(--bad); }
+  .live-btns { display: flex; gap: 7px; flex-wrap: wrap; }
+  .live-btns .btn { padding: 8px 13px; font-size: 13.5px; }
+  .obs {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    gap: 10px; margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--line);
+  }
+  .obs div { min-width: 0; }
+  .obs dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; }
+  .obs dd { margin: 3px 0 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .privacy { margin: 14px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--ink-3); }
+  .privacy b { color: var(--ink-2); font-weight: 600; }
+  .controls.muted { opacity: 0.45; pointer-events: none; }
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Thumbnails and the player iframe both come from Google hosts; warming
-         the connections shaves a round trip off the first track. -->
-    <link rel="preconnect" href="https://i.ytimg.com" />
-    <link rel="preconnect" href="https://www.youtube.com" />
+  /* ---- the excuse ---- */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+  }
+  #excuse {
+    font-size: 19px; line-height: 1.62; letter-spacing: -0.01em; margin: 0 0 16px;
+  }
+  @media (min-width: 620px) { #excuse { font-size: 20px; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .chip {
+    font-size: 11.5px; padding: 3px 9px; border-radius: 999px;
+    background: var(--bg-2); border: 1px solid var(--line); color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    <link rel="stylesheet" href="styles.css" />
-  </head>
+  /* ---- plausibility ---- */
+  .meter-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .meter-head b { font-size: 13px; letter-spacing: 0; text-transform: none; }
+  .track { height: 7px; border-radius: 999px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
+  .fill { height: 100%; width: 0; border-radius: 999px; transition: width .35s ease, background-color .35s ease; }
+  .checks { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .checks li {
+    font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+    padding-left: 18px; position: relative;
+  }
+  .checks li::before {
+    content: ""; position: absolute; left: 4px; top: 8px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3);
+  }
 
-  <body>
-    <!-- ── The scenes ────────────────────────────────────────────────
-         Two of them, one per theme, both keyed off the same --horizon
-         variable so sun, water and ground stay welded to one line at any
-         aspect ratio. Only the active one is rendered. All decorative,
-         all hidden from assistive tech. -->
-    <div class="bg" aria-hidden="true">
-      <!-- ── Dusk: city, sunset, parked car ─────────────────────── -->
-      <div class="scene scene--dusk">
-        <div class="sky"></div>
-        <div class="sun"></div>
+  /* ---- story details ---- */
+  details.card summary {
+    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink-2);
+    list-style: none; display: flex; justify-content: space-between; align-items: center;
+  }
+  details.card summary::-webkit-details-marker { display: none; }
+  details.card summary::after { content: "＋"; color: var(--ink-3); font-weight: 400; }
+  details.card[open] summary::after { content: "－"; }
+  details.card[open] summary { margin-bottom: 14px; }
+  .facts { display: grid; gap: 0; }
+  .fact {
+    display: grid; grid-template-columns: 108px 1fr; gap: 12px;
+    padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px;
+  }
+  .fact:first-child { border-top: 0; }
+  .fact dt { color: var(--ink-3); font-size: 12.5px; padding-top: 1px; }
+  .fact dd { margin: 0; color: var(--ink); }
 
-        <!-- Stretched rather than scaled: buildings are blocks, and nobody
-             can tell a block got 8% wider. -->
-        <svg class="skyline" viewBox="0 0 1440 200" preserveAspectRatio="none">
-          <path
-            fill="#150a2c"
-            fill-opacity="0.88"
-            d="M0 200V150h60v-30h40v50h40V96h36v44h54V60h32v70h38v-26h52v54h40V78h36v48h52v24h40V88h36v46h44v-22h48v52h42V70h36v58h46v20h40V100h44v42h44V64h36v56h44v36h40V92h40v46h48v-22h44v44h44V74h36v58h48v20h40V98h40v46h40v-20h40v76z"
-          />
-          <!-- Lit windows, deliberately sparse — a full grid reads as a
-               texture rather than a city. -->
-          <g fill="#ffcf8a" opacity="0.5">
-            <rect x="70" y="132" width="5" height="8" /><rect x="84" y="132" width="5" height="8" />
-            <rect x="152" y="110" width="5" height="8" /><rect x="152" y="126" width="5" height="8" />
-            <rect x="248" y="76" width="5" height="8" /><rect x="248" y="94" width="5" height="8" />
-            <rect x="262" y="76" width="5" height="8" /><rect x="404" y="92" width="5" height="8" />
-            <rect x="418" y="110" width="5" height="8" /><rect x="512" y="102" width="5" height="8" />
-            <rect x="526" y="102" width="5" height="8" /><rect x="642" y="86" width="5" height="8" />
-            <rect x="656" y="104" width="5" height="8" /><rect x="828" y="112" width="5" height="8" />
-            <rect x="906" y="78" width="5" height="8" /><rect x="920" y="96" width="5" height="8" />
-            <rect x="1042" y="106" width="5" height="8" /><rect x="1146" y="90" width="5" height="8" />
-            <rect x="1160" y="108" width="5" height="8" /><rect x="1298" y="112" width="5" height="8" />
-          </g>
-        </svg>
+  /* ---- history ---- */
+  h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--ink-3); margin: 26px 0 10px;
+  }
+  #history { display: grid; gap: 8px; }
+  .hist {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 11px 13px;
+  }
+  .hist p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  .hist button {
+    flex: none; font: inherit; font-size: 11.5px; cursor: pointer;
+    background: transparent; border: 1px solid var(--line);
+    color: var(--ink-2); border-radius: 7px; padding: 3px 8px;
+  }
+  .hist button:hover { border-color: var(--ink-3); color: var(--ink); }
 
-        <div class="ground"></div>
+  footer { margin-top: 32px; font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="dot"></span>Alibi</h1>
+    <p class="tagline">A believable excuse, built fresh every time from a real place, its weather, and what that weather does to the traffic.</p>
+  </header>
 
-        <!-- Side-on beats three-quarter here: at silhouette scale a profile
-             reads as a car instantly, and a three-quarter view reads as a
-             smudge. -->
-        <svg class="car" viewBox="0 0 440 160">
-          <defs>
-            <radialGradient id="tail" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#ff2d55" stop-opacity="0.9" />
-              <stop offset="100%" stop-color="#ff2d55" stop-opacity="0" />
-            </radialGradient>
-          </defs>
-          <ellipse cx="220" cy="140" rx="200" ry="12" fill="#000" opacity="0.45" />
-          <!-- The body sits *above* the ground gradient in value, not below
-               it: down here the ground is near-black, so a true silhouette
-               would simply disappear. -->
-          <path
-            fill="#1b1033"
-            d="M18 132v-26c0-9 6-16 16-19l60-16c30-24 52-33 88-33h56c30 0 50 10 68 32l70 18c14 4 22 11 22 21v23z"
-          />
-          <path
-            fill="none"
-            stroke="#ffb45c"
-            stroke-opacity="0.8"
-            stroke-width="3"
-            stroke-linecap="round"
-            d="M94 71c30-24 52-33 88-33h56c30 0 50 10 68 32"
-          />
-          <path fill="#4a2c74" opacity="0.75" d="M118 68c24-17 42-23 68-23h44c22 0 37 7 51 23z" />
-          <circle cx="112" cy="132" r="24" fill="#0a0417" />
-          <circle cx="112" cy="132" r="9" fill="#2a1846" />
-          <circle cx="330" cy="132" r="24" fill="#0a0417" />
-          <circle cx="330" cy="132" r="9" fill="#2a1846" />
-          <circle class="tail" cx="20" cy="104" r="34" fill="url(#tail)" />
-          <rect x="10" y="98" width="16" height="10" rx="5" fill="#ff2d55" />
-        </svg>
+  <div class="card live" id="livePanel">
+    <div class="live-top">
+      <div>
+        <div class="live-title">Use real conditions <span class="badge" id="liveBadge" hidden>LIVE</span></div>
+        <p class="live-sub" id="liveSub">Build the excuse from where you actually are and the weather that is actually outside — then it is true when they check.</p>
       </div>
-
-      <!-- ── Beach: midday sun, sea, sand, palms ────────────────── -->
-      <div class="scene scene--beach">
-        <div class="sky"></div>
-
-        <!-- Kept clear of the top bar: white-on-pale-blue behind the clock
-             and the counter makes both harder to read than the clouds are
-             worth. -->
-        <svg class="clouds" viewBox="0 0 1440 260" preserveAspectRatio="xMidYMid slice">
-          <g fill="#fff" opacity="0.92">
-            <ellipse cx="196" cy="150" rx="92" ry="30" />
-            <ellipse cx="266" cy="136" rx="64" ry="36" />
-            <ellipse cx="130" cy="160" rx="56" ry="22" />
-            <ellipse cx="1128" cy="212" rx="106" ry="30" />
-            <ellipse cx="1208" cy="198" rx="72" ry="36" />
-            <ellipse cx="1052" cy="220" rx="60" ry="22" />
-          </g>
-          <g fill="#fff" opacity="0.6">
-            <ellipse cx="612" cy="96" rx="76" ry="20" />
-            <ellipse cx="668" cy="86" rx="50" ry="24" />
-          </g>
-        </svg>
-
-        <div class="sun"></div>
-
-        <!-- Sea sits between the horizon and the shoreline; both are
-             percentages of the viewport, so the band never detaches from
-             the sky above it. -->
-        <div class="sea">
-          <!-- The bright column is centred on x=1066, which is the sun's
-               74% — glitter anywhere else reads as scratches on the water. -->
-          <svg class="sea__glint" viewBox="0 0 1440 200" preserveAspectRatio="none">
-            <g fill="#ffffff" opacity="0.6">
-              <rect x="986" y="16" width="160" height="4" rx="2" />
-              <rect x="946" y="44" width="240" height="5" rx="2.5" />
-              <rect x="1002" y="72" width="128" height="5" rx="2.5" />
-              <rect x="922" y="104" width="288" height="6" rx="3" />
-              <rect x="978" y="140" width="176" height="6" rx="3" />
-              <rect x="936" y="172" width="260" height="6" rx="3" />
-            </g>
-            <g fill="#ffffff" opacity="0.22">
-              <rect x="160" y="52" width="180" height="4" rx="2" />
-              <rect x="420" y="96" width="150" height="4" rx="2" />
-              <rect x="240" y="150" width="210" height="5" rx="2.5" />
-              <rect x="620" y="178" width="170" height="5" rx="2.5" />
-            </g>
-          </svg>
-        </div>
-
-        <div class="sand">
-          <!-- Foam line: the wet edge where the sea meets the sand. -->
-          <svg class="foam" viewBox="0 0 1440 60" preserveAspectRatio="none">
-            <path
-              fill="#ffffff"
-              opacity="0.75"
-              d="M0 22c120 16 200-10 320 2s180 22 300 12 200-24 320-14 200 20 300 10 120-14 200-8v-24H0z"
-            />
-          </svg>
-        </div>
-
-        <!-- Each frond is one closed shape: out along the top edge to the
-             tip, back along a lower edge that bulges, which is what gives a
-             leaf its width. Two arcs of equal sag would just draw a spike. -->
-        <svg class="palm palm--left" viewBox="0 0 220 340">
-          <g fill="#123a24">
-            <path d="M92 340c-8-76-4-160 4-230l18 2c-8 70-12 152-6 228z" />
-            <path d="M104 118C72 90 36 68 0 76c30 22 62 34 104 42z" />
-            <path d="M104 118C78 76 48 40 20 20c20 40 46 70 84 98z" />
-            <path d="M104 118C88 76 78 40 80 6c32 36 42 74 24 112z" />
-            <path d="M104 118c14-42 32-76 46-100 6 42-10 72-46 100z" />
-            <path d="M104 118c36-26 74-48 108-46-30 24-64 38-108 46z" />
-            <path d="M104 118c-30 2-66 12-96 22 34 6 66-6 96-22z" />
-            <path d="M104 118c32 2 68 10 100 16-34 10-68 0-100-16z" />
-          </g>
-          <g fill="#2c1b10">
-            <circle cx="98" cy="128" r="8" /><circle cx="115" cy="134" r="7" />
-            <circle cx="106" cy="144" r="6" />
-          </g>
-        </svg>
-
-        <svg class="palm palm--right" viewBox="0 0 220 340">
-          <g fill="#0f3520">
-            <path d="M92 340c-8-76-4-160 4-230l18 2c-8 70-12 152-6 228z" />
-            <path d="M104 118C72 90 36 68 0 76c30 22 62 34 104 42z" />
-            <path d="M104 118C78 76 48 40 20 20c20 40 46 70 84 98z" />
-            <path d="M104 118C88 76 78 40 80 6c32 36 42 74 24 112z" />
-            <path d="M104 118c14-42 32-76 46-100 6 42-10 72-46 100z" />
-            <path d="M104 118c36-26 74-48 108-46-30 24-64 38-108 46z" />
-            <path d="M104 118c-30 2-66 12-96 22 34 6 66-6 96-22z" />
-            <path d="M104 118c32 2 68 10 100 16-34 10-68 0-100-16z" />
-          </g>
-        </svg>
-
-        <!-- Parasol, planted in the sand. The dusk theme's parked car, in
-             swimwear. -->
-        <svg class="parasol" viewBox="0 0 300 260">
-          <ellipse cx="150" cy="246" rx="70" ry="9" fill="#8a6636" opacity="0.35" />
-          <rect x="146" y="96" width="8" height="150" rx="4" fill="#7a5a34" />
-          <path d="M150 20c62 0 112 34 118 76H32C38 54 88 20 150 20z" fill="#f7f3ea" />
-          <path d="M150 20c22 0 40 34 44 76h-44z" fill="#ff5b5b" />
-          <path d="M62 96C74 54 108 22 150 20c-22 2-40 36-44 76z" fill="#ff5b5b" />
-          <path d="M238 96c-12-42-46-74-88-76 22 2 40 36 44 76z" fill="#ff5b5b" />
-          <circle cx="150" cy="20" r="7" fill="#7a5a34" />
-        </svg>
+      <div class="live-btns">
+        <button class="btn" id="useLive">Use my location</button>
+        <button class="btn" id="refreshLive" hidden>Refresh</button>
+        <button class="btn" id="dropLive" hidden>Turn off</button>
       </div>
-
-      <div class="grain"></div>
-      <div class="vignette"></div>
     </div>
+    <div class="obs" id="obs" hidden></div>
+    <p class="privacy" id="privacy">
+      Asks the browser for precise location. Your coordinates are rounded to about 100&nbsp;m before
+      they leave the device, then sent only to <b>open-meteo.com</b> (weather),
+      <b>openstreetmap.org</b> (place name) and <b>overpass</b> (nearby road names). Coordinates are
+      never stored. There is no live traffic feed — the incident is inferred from the real weather
+      and the real time of day.
+    </p>
+  </div>
 
-    <!-- The actual sound source. A 1×1 YouTube iframe parked off-screen —
-         everything visible below is a custom UI driving it over the API. -->
-    <div class="yt-host" aria-hidden="true"><div id="yt-player"></div></div>
+  <div class="controls" id="controls">
+    <label class="field"><span>Region</span>
+      <select id="region"></select>
+    </label>
+    <label class="field"><span>City</span>
+      <select id="city"></select>
+    </label>
+    <label class="field"><span>Situation</span>
+      <select id="scenario"></select>
+    </label>
+    <label class="field"><span>Tone</span>
+      <select id="tone"></select>
+    </label>
+  </div>
 
-    <!-- ── Top bar ───────────────────────────────────────────────────
-         One grid row, so the clock, the counter and the buttons keep a
-         shared centre line even as their heights diverge. -->
-    <header class="topbar">
-      <div class="clock" id="clock" aria-label="Current time"></div>
+  <div class="row">
+    <button class="btn primary" id="go">New excuse</button>
+    <label class="toggle" title="Only use weather that is plausible for the current month">
+      <input type="checkbox" id="seasonal" checked> Match today's season
+    </label>
+    <span class="hint"><kbd>space</kbd> new · <kbd>c</kbd> copy</span>
+  </div>
 
-      <!-- Starts as the track count. If the live counter connects, app.js
-           swaps in the number of people actually here. -->
-      <div class="tally" aria-live="polite">
-        <span class="tally__dot" aria-hidden="true"></span>
-        <span class="tally__num" id="tallyNum">78</span>
-        <span class="tally__label" id="tallyLabel">songs from 2016</span>
-      </div>
+  <div class="card">
+    <p id="excuse">Press <b>New excuse</b> to start.</p>
+    <div class="chips" id="chips"></div>
+    <div class="card-actions">
+      <button class="btn" id="copy">Copy</button>
+      <button class="btn" id="again">Another</button>
+    </div>
+  </div>
 
-      <nav class="links" aria-label="Options">
-        <button
-          class="link"
-          id="themeBtn"
-          type="button"
-          aria-label="Switch to the beach"
-          title="Switch scene"
-        >
-          <svg class="i-sun" viewBox="0 0 24 24" width="19" height="19" fill="none"
-               stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4.2" />
-            <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6" />
-          </svg>
-          <svg class="i-moon" viewBox="0 0 24 24" width="19" height="19" fill="none"
-               stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
-               stroke-linejoin="round" aria-hidden="true">
-            <path d="M20.5 14.4A8.5 8.5 0 019.6 3.5a8.5 8.5 0 1010.9 10.9z" />
-          </svg>
-        </button>
+  <div class="card" id="meterCard" hidden>
+    <div class="meter-head">
+      <span>Plausibility</span>
+      <b id="band">—</b>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <ul class="checks" id="checks"></ul>
+  </div>
 
-        <a
-          class="link"
-          href="https://www.youtube.com/playlist?list=PL788cqrhfEcYf1KsGlpRVm2YFlX5PZJuL"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open the full playlist on YouTube"
-          title="Open the full playlist on YouTube"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path
-              d="M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm0-13.332c-3.432 0-6.228 2.796-6.228 6.228S8.568 18.228 12 18.228s6.228-2.796 6.228-6.228S15.432 5.772 12 5.772zM9.684 15.54V8.46L15.816 12l-6.132 3.54z"
-            />
-          </svg>
-        </a>
-      </nav>
-    </header>
+  <details class="card" id="factsCard" hidden>
+    <summary>Keep your story straight</summary>
+    <dl class="facts" id="facts"></dl>
+  </details>
 
-    <!-- ── The plug ──────────────────────────────────────────────────
-         Easter egg. Plays a short synthesised jack-in chime — no audio file
-         ships with the site, it's four oscillators in app.js. -->
-    <aside class="plugbar">
-      <button class="plug" id="plug" type="button" aria-label="Plug in the aux">
-        <span class="plug__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 3v5M15 3v5" />
-            <path d="M7 8h10v3a5 5 0 01-5 5 5 5 0 01-5-5z" />
-            <path d="M12 16v2a3 3 0 003 3h2" />
-          </svg>
-        </span>
-        <span class="plug__text">
-          <span class="plug__title">pass the aux</span>
-          <span class="plug__sub">you get one song</span>
-        </span>
-      </button>
-    </aside>
+  <h2 id="histHead" hidden>Earlier</h2>
+  <div id="history"></div>
 
-    <main>
-      <!-- The full name is an aria-label, NOT a visually-hidden child span.
-           `background-clip: text` builds its mask from every descendant
-           glyph, and a child's clip-path/overflow:hidden does not remove
-           those glyphs from the parent's mask — a .sr-only span in here
-           gets painted across the wordmark at full size. -->
-      <h1 class="logo" aria-label="2016 Nostalgia — the songs that owned the year">
-        <span class="logo__year">2016</span>
-        <span class="logo__word">NOSTALGIA</span>
-      </h1>
+  <footer>
+    Made for entertainment. Every excuse is fiction assembled from real place names and plausible
+    weather — the plausibility score only tells you how easily someone could check it, not whether
+    lying is a good idea. Consequences are entirely yours.
+  </footer>
 
-      <div class="dock">
-        <!-- Playlist, popped up over the scene by the list button. -->
-        <section class="list" id="list" aria-label="Playlist" hidden>
-          <ol id="listItems"></ol>
-        </section>
+  <div class="sr" id="live" role="status" aria-live="polite"></div>
+</div>
 
-        <!-- The refresh button sits *inside* the paragraph so it trails the
-             last word. As a sibling it would pin to the edge of the text box,
-             which on a short centred line lands nowhere near the text. -->
-        <p class="bumper">
-          <span class="bumper__text" id="bumperText" aria-live="polite"
-            >when the aux was a responsibility</span
-          ><button class="bumper__next" id="bumperNext" type="button" aria-label="Another line">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 11.5A8 8 0 106.3 17.7" />
-              <path d="M20 5.5v6h-6" />
-            </svg>
-          </button>
-        </p>
-
-        <section class="player" aria-label="Player">
-          <div class="disc" id="disc">
-            <div class="disc__ring">
-              <img id="cover" class="disc__art" alt="" src="" />
-            </div>
-            <span class="disc__hub" aria-hidden="true"></span>
-          </div>
-
-          <div class="meta">
-            <p class="meta__title" id="title">Winding the tape…</p>
-            <p class="meta__artist" id="artist">&nbsp;</p>
-
-            <div
-              class="seek"
-              id="seek"
-              role="slider"
-              tabindex="0"
-              aria-label="Seek"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <div class="seek__rail"><div class="seek__fill" id="seekFill"></div></div>
-              <div class="seek__knob" id="seekKnob"></div>
-            </div>
-            <div class="time"><span id="tCur">0:00</span> / <span id="tDur">0:00</span></div>
-          </div>
-
-          <div class="controls">
-            <button id="shuffle" type="button" class="btn btn--toggle is-on" aria-label="Shuffle" aria-pressed="true">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M16 3h5v5" /><path d="M4 20L21 3" />
-                <path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" />
-              </svg>
-            </button>
-            <button id="prev" type="button" class="btn" aria-label="Previous track">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-              </svg>
-            </button>
-            <button id="play" type="button" class="btn btn--play" aria-label="Play" disabled>
-              <svg class="i-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              <svg class="i-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
-              </svg>
-              <span class="btn__spinner" aria-hidden="true"></span>
-            </button>
-            <button id="next" type="button" class="btn" aria-label="Next track">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-                <path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" />
-              </svg>
-            </button>
-            <button id="listBtn" type="button" class="btn btn--toggle" aria-label="Playlist"
-                    aria-expanded="false" aria-controls="list">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
-                <path d="M3 6h13v2H3zm0 5h13v2H3zm0 5h9v2H3zm15-6.5l4 3-4 3z" />
-              </svg>
-            </button>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <!-- Toast for the plug chime and for tracks YouTube refuses to embed. -->
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-    <noscript>
-      <p class="noscript">
-        This one needs JavaScript — the player is a YouTube iframe under the hood.
-        <a href="https://www.youtube.com/playlist?list=PL788cqrhfEcYf1KsGlpRVm2YFlX5PZJuL">
-          Open the playlist on YouTube instead.
-        </a>
-      </p>
-    </noscript>
-
-    <script src="tracks.js"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <!-- Optional, and last: the live count needs an outside service, so it
-         loads as a module and stays entirely out of the player's way. -->
-    <script type="module" src="presence.js"></script>
-  </body>
+<script src="engine.js"></script>
+<script src="live.js"></script>
+<script src="app.js"></script>
+</body>
 </html>
